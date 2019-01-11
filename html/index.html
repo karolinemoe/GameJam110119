@@ -20,7 +20,11 @@
 
 	 -->
 	<body>
-		<p>{{ api }}</p>
-		{{ test }}
+        
+        
+        {% for level in levels %}
+            {{ level }}
+            <br>
+        {% endfor %}
 	</body>
 </html>
