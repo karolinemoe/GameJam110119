@@ -114,7 +114,7 @@ if(isset($_POST['harbor'])) {
             break;
     }
 
-    //print $data['lat'] . "    " . $data['lon'];
+    /* Live observation */
     $url = "http://api.sehavniva.no/tideapi.php?lat=" . $data['lat'] . "&lon=" . $data['lon'] . "&fromtime=" . $fromTime . "&totime=" . $toTime . "&datatype=obs&refcode=msl&place=&file=&lang=nb&interval=10&dst=0&tzone=&tide_request=locationdata";
 
     $xmlDoc = new DOMDocument();
@@ -123,11 +123,59 @@ if(isset($_POST['harbor'])) {
     $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
 
     $levels = [];
+    $times = [];
     foreach ($waterlevels as $waterlevel) {
         array_push($levels, $waterlevel->getAttribute('value'));
+        array_push($times, $waterlevel->getAttribute('time'));
     }
 
+    $time = end($times);
+    list($date, $time) = explode("T", $time);
+    list($t, $timezone) = explode("+", $time);
+    list($hour, $minute, $second) = explode(":", $time);
+    $data['measureTime'] = $hour . ":" . $minute;
+
     $data['currentLevel'] = end($levels);
+
+    /* Highs and lows */
+    $url = "http://api.sehavniva.no/tideapi.php?lat=" . $data['lat'] . "&lon=" . $data['lon'] . "&fromtime=" . $fromTime . "&totime=" . $toTime . "&datatype=tab&refcode=msl&place=&file=&lang=nb&interval=10&dst=0&tzone=&tide_request=locationdata";
+    $xmlDoc = new DOMDocument();
+    $xmlDoc->load($url);
+
+    $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
+
+    $highLow = [];
+
+    $levels = [];
+    $times = [];
+    $flags = [];
+
+    $i = 1;
+    foreach ($waterlevels as $waterlevel) {
+        $time = $waterlevel->getAttribute('time');
+        list($date, $time) = explode("T", $time);
+        list($t, $timezone) = explode("+", $time);
+        list($hour, $minute, $second) = explode(":", $time);
+        $highlowTime = $hour . ":" . $minute;
+
+       
+        $highLow += [
+            "time" . $i => $highlowTime,
+            "flag" . $i => $waterlevel->getAttribute('flag'),
+            "level" . $i => $waterlevel->getAttribute('value'),
+        ];
+        $i = $i+1;
+
+        array_push($levels, $waterlevel->getAttribute('value'));
+        array_push($times, $highlowTime);
+        array_push($flags, $waterlevel->getAttribute('flag'));
+        //print "at " . $highlowTime . " the water will be " . $waterlevel->getAttribute('flag') . " with " . $waterlevel->getAttribute('value') . "cm from median sea level\n";
+    }
+
+    //print_r ($highLow);
+
+
+    $data['highLow'] = $highLow;
 }
 
 echo $twig->render('index.html', $data);
