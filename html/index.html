@@ -68,95 +68,140 @@
             {% if harbor %}
             <div class="harbor">
                 <h2> {{ harbor }} <small>Latitude: {{ lat }}, Lonitude: {{ lon }}</small></h2><br>
-                Current cm from median sea level: {{ currentLevel }} measured at {{ measureTime }}
-            </div>  <br><br>
-            <div class="row">
-                <div class="col-sm-6"><canvas id="myCanvas" width="475" height="320">Your browser does not support the canvas element.</canvas>
-                    <script>
-                        var canvas = document.getElementById("myCanvas");
-                        var ctx = canvas.getContext("2d");
-                        /* Water */
-                        var cl = '{{ currentLevel }}';
-                        var temp = 0;
-                        if ( cl > 0) {
+            
+            {% if currentLevel is defined %}
+                    Current cm from median sea level: {{ currentLevel }} measured at {{ measureTime }} and {% if tide == "sinking" %} sinking {% else %} rising {% endif %}
+                </div>  <br><br>
+                <div class="row">
+                    <div class="col-sm-5"><canvas id="myCanvas" width="475" height="320">Your browser does not support the canvas element.</canvas>
+                        <script>
+                            var canvas = document.getElementById("myCanvas");
+                            var ctx = canvas.getContext("2d");
+                            /* Current Water Level */
+
+                            var cl = '{{ currentLevel }}';
+                            var temp = 0;
                             cl = 150 - cl;
 
-                        } else {
-                            cl = 150 - cl;
-                        } 
+                            /* next tide */
+                            var nt = '{{ nextTideValue }}';
+                            nt = 150 - nt; 
 
-                        ctx.fillStyle = "#73B5E5";
-                        ctx.fillRect(25,cl,475,1000);
-                        ctx.fillStyle = "#000000";
-                        /* Water level lines */
-                        ctx.moveTo(25, 1);
-                        ctx.lineTo(475, 1);
+                            if (nt < cl) {
+                                ctx.fillStyle = "#ffcc99";
+                                ctx.fillRect(25,nt,475,1000);
+                                ctx.fillStyle = "#000000";
+                                ctx.font = "11px Arial";
+                                ctx.fillText("Next high", 100, nt-2);    
+                                
+                                ctx.fillStyle = "#73B5E5";
+                                ctx.fillRect(25,cl,475,1000);
+                                ctx.fillStyle = "#000000";
+                                ctx.fillText("Current level", 30, cl-2);
+                            } else {
+                                ctx.fillStyle = "#73B5E5";
+                                ctx.fillRect(25,cl,475,1000);
+                                ctx.fillStyle = "#000000";
+                                ctx.font = "11px Arial";
+                                ctx.fillText("Current level", 30, cl-2);
 
-                        ctx.moveTo(25, 50);
-                        ctx.lineTo(475, 50);
-                        
-                        ctx.moveTo(25, 100);
-                        ctx.lineTo(475, 100);
-                        
-                        ctx.moveTo(25, 150);
-                        ctx.lineTo(475, 150);
-                        
-                        ctx.moveTo(25, 200);
-                        ctx.lineTo(475, 200);
-                        
-                        ctx.moveTo(25, 250);
-                        ctx.lineTo(475, 250);
+                                ctx.fillStyle = "#ffcc99";
+                                ctx.fillRect(25,nt,475,1000);
+                                ctx.fillStyle = "#000000";
+                                ctx.fillText("Next low", 100, nt-2);
+                            }
 
-                        ctx.moveTo(25, 300);
-                        ctx.lineTo(475, 300);
+                            ctx.fillStyle = "#000000";
 
-                        ctx.stroke();
-                        /* TEXT */
-                        ctx.font = "11px Arial";
-                        ctx.fillText("Median sea level", 375, 148);
-                        ctx.fillText("150", 2, 10);
-                        ctx.fillText("100", 2, 53);
-                        ctx.fillText("50", 2, 103);
-                        ctx.fillText("0", 2, 153);
-                        ctx.fillText("-50", 2, 203);
-                        ctx.fillText("-100", 2, 253);
-                        ctx.fillText("-150", 2, 303);
+                            /* Water level lines */
+                            ctx.moveTo(25, 1);
+                            ctx.lineTo(475, 1);
 
-                        
-                    </script>
+                            ctx.moveTo(25, 50);
+                            ctx.lineTo(475, 50);
+                            
+                            ctx.moveTo(25, 100);
+                            ctx.lineTo(475, 100);
+                            
+                            ctx.moveTo(25, 150);
+                            ctx.lineTo(475, 150);
+                            
+                            ctx.moveTo(25, 200);
+                            ctx.lineTo(475, 200);
+                            
+                            ctx.moveTo(25, 250);
+                            ctx.lineTo(475, 250);
+
+                            ctx.moveTo(25, 300);
+                            ctx.lineTo(475, 300);
+
+                            ctx.stroke();
+                            /* TEXT */
+                            ctx.font = "11px Arial";
+                            ctx.fillText("Median sea level", 375, 148);
+                            ctx.fillText("150", 2, 10);
+                            ctx.fillText("100", 2, 53);
+                            ctx.fillText("50", 2, 103);
+                            ctx.fillText("0", 2, 153);
+                            ctx.fillText("-50", 2, 203);
+                            ctx.fillText("-100", 2, 253);
+                            ctx.fillText("-150", 2, 303);
+
+                            
+                        </script>
+                    </div>
+                    <div class="col-lg-5"> <div id="mapid" style="width: 475px; height: 320px;"></div>
+                        <script>
+                            var mymap = L.map('mapid').setView([{{ lat }}, {{ lon }}], 13);
+
+                            L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+                                maxZoom: 18,
+                                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+                                    '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                                    'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                                id: 'mapbox.streets'
+                            }).addTo(mymap);
+                        </script>
+                    </div>
                 </div>
-                <div class="col-lg-4"> <div id="mapid" style="width: 420px; height: 320px;"></div>
-                    <script>
-                        var mymap = L.map('mapid').setView([{{ lat }}, {{ lon }}], 13);
-
-                        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
-                            maxZoom: 18,
-                            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
-                                '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-                                'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-                            id: 'mapbox.streets'
-                        }).addTo(mymap);
-                    </script>
-                </div>
-            </div>
-            <br>
-                <h2><small>Highs and lows for today at {{ harbor }}</small></h2>
-                <p class="text-muted">
-                    {% for i in range(1, 4) %}
-                        {% for key,value in highLow %}
-                            {% if key == "time" ~ i %}
-                                {{ value }}:
-                            {% endif %}
-                            {% if key == "flag" ~ i %}
-                                {{ value }}
-                            {% endif %}
-                            {% if key == "level" ~ i %}
-                                {{ value }}cm
-                                <br>
-                            {% endif %}
+                <br>
+                    <h2><small>Highs and lows for today at {{ harbor }}</small></h2>
+                    <p class="text-muted">
+                        {% for i in range(1, 4) %}
+                            {% for key,value in highLow %}
+                                {% if key == "time" ~ i %}
+                                    {{ value }}:
+                                {% endif %}
+                                {% if key == "flag" ~ i %}
+                                    {{ value }}
+                                {% endif %}
+                                {% if key == "level" ~ i %}
+                                    {{ value }}cm
+                                    <br>
+                                {% endif %}
+                            {% endfor %}
                         {% endfor %}
-                    {% endfor %}
-                </p>
+                    </p>
+                    <h2><small>Highs and lows tomorrow</small></h2>
+                    <p class="text-muted">
+                        {% for i in range(1, 4) %}
+                            {% for key,value in highLowTomorrow %}
+                                {% if key == "time" ~ i %}
+                                    {{ value }}:
+                                {% endif %}
+                                {% if key == "flag" ~ i %}
+                                    {{ value }}
+                                {% endif %}
+                                {% if key == "level" ~ i %}
+                                    {{ value }}cm
+                                    <br>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </p>
+                {% else %}
+                Weatherstation is offline
+                {% endif %}
             {% else %}
             <br><br><br><br><br><br><br>
             <div id="mapid" style="width: 600px; height: 400px;"></div>

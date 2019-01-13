@@ -16,9 +16,9 @@ if(isset($_POST['harbor'])) {
     $data['lat'] = "";
     $data['lon'] = "";
 
-    $fromTime = date('Y-m-d') . "T00%3A00" . "\n";
+    $fromTime = date('Y-m-d') . "T00%3A00";
     $nextday = time()+(1*24*60*60);
-    $toTime = date('Y-m-d', $nextday) . "T00%3A00" . "\n";
+    $toTime = date('Y-m-d', $nextday) . "T00%3A00";
 
     //$fromTime = "2019-01-11T00%3A00";
     //$toTime = "2019-01-12T00%3A00";
@@ -120,62 +120,101 @@ if(isset($_POST['harbor'])) {
     $xmlDoc = new DOMDocument();
     $xmlDoc->load($url);
 
-    $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
+    if ($xmlDoc->getElementsByTagName("waterlevel")->length > 0) {
+        $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
 
-    $levels = [];
-    $times = [];
-    foreach ($waterlevels as $waterlevel) {
-        array_push($levels, $waterlevel->getAttribute('value'));
-        array_push($times, $waterlevel->getAttribute('time'));
+        $levels = [];
+        $times = [];
+        foreach ($waterlevels as $waterlevel) {
+            array_push($levels, $waterlevel->getAttribute('value'));
+            array_push($times, $waterlevel->getAttribute('time'));
+        }
+
+        $time = end($times);
+        list($date, $time) = explode("T", $time);
+        list($t, $timezone) = explode("+", $time);
+        list($hour, $minute, $second) = explode(":", $time);
+        $data['currentHour'] = $hour;
+        $data['measureTime'] = $hour . ":" . $minute;
+
+        $data['currentLevel'] = end($levels);
+
+        $data['prevLevel'] = $levels[count($levels)-2];
+        if ($data['prevLevel'] > $data['currentLevel']) {
+            $data['tide'] = "sinking";
+        } else {
+            $data['tide'] = "rising";
+        }
     }
-
-    $time = end($times);
-    list($date, $time) = explode("T", $time);
-    list($t, $timezone) = explode("+", $time);
-    list($hour, $minute, $second) = explode(":", $time);
-    $data['measureTime'] = $hour . ":" . $minute;
-
-    $data['currentLevel'] = end($levels);
 
     /* Highs and lows */
     $url = "http://api.sehavniva.no/tideapi.php?lat=" . $data['lat'] . "&lon=" . $data['lon'] . "&fromtime=" . $fromTime . "&totime=" . $toTime . "&datatype=tab&refcode=msl&place=&file=&lang=nb&interval=10&dst=0&tzone=&tide_request=locationdata";
     $xmlDoc = new DOMDocument();
     $xmlDoc->load($url);
 
-    $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
+    if ($xmlDoc->getElementsByTagName("waterlevel")->length > 0) {
+        $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
 
-    $highLow = [];
+        $highLow = [];
 
-    $levels = [];
-    $times = [];
-    $flags = [];
+        $i = 1;
+        foreach ($waterlevels as $waterlevel) {
+            $time = $waterlevel->getAttribute('time');
+            list($date, $time) = explode("T", $time);
+            list($t, $timezone) = explode("+", $time);
+            list($hour, $minute, $second) = explode(":", $time);
+            $highlowTime = $hour . ":" . $minute;
+            $highlowHour = $hour;
 
-    $i = 1;
-    foreach ($waterlevels as $waterlevel) {
-        $time = $waterlevel->getAttribute('time');
-        list($date, $time) = explode("T", $time);
-        list($t, $timezone) = explode("+", $time);
-        list($hour, $minute, $second) = explode(":", $time);
-        $highlowTime = $hour . ":" . $minute;
+        
+            $highLow += [
+                "hour" . $i => $highlowHour,
+                "time" . $i => $highlowTime,
+                "flag" . $i => $waterlevel->getAttribute('flag'),
+                "level" . $i => $waterlevel->getAttribute('value'),
+            ];
+            $i = $i+1;
+        }
+        $data['highLow'] = $highLow;
+        
+        if (isset($data['currentHour'])) {
+            for ($i = 1; $i <= 4; $i++) {
+                if($data['currentHour'] < $highLow['hour'.$i]) {
+                    $data['nextTideValue'] = $highLow['level' . $i];
+                    $i = 5;
+                }
+            }
+        }
 
-       
-        $highLow += [
-            "time" . $i => $highlowTime,
-            "flag" . $i => $waterlevel->getAttribute('flag'),
-            "level" . $i => $waterlevel->getAttribute('value'),
-        ];
-        $i = $i+1;
+        /* Highs and lows tomorrow */
+        $overimorra = time()+(2*24*60*60);
+        $om = date('Y-m-d', $overimorra) . "T00%3A00";
+        $url = "http://api.sehavniva.no/tideapi.php?lat=" . $data['lat'] . "&lon=" . $data['lon'] . "&fromtime=" . $toTime . "&totime=" . $om . "&datatype=tab&refcode=msl&place=&file=&lang=nb&interval=10&dst=0&tzone=&tide_request=locationdata";
+        $xmlDoc = new DOMDocument();
+        $xmlDoc->load($url);
 
-        array_push($levels, $waterlevel->getAttribute('value'));
-        array_push($times, $highlowTime);
-        array_push($flags, $waterlevel->getAttribute('flag'));
-        //print "at " . $highlowTime . " the water will be " . $waterlevel->getAttribute('flag') . " with " . $waterlevel->getAttribute('value') . "cm from median sea level\n";
+        $waterlevels = $xmlDoc->getElementsByTagName("waterlevel");
+
+        $highLow = [];
+
+        $i = 1;
+        foreach ($waterlevels as $waterlevel) {
+            $time = $waterlevel->getAttribute('time');
+            list($date, $time) = explode("T", $time);
+            list($t, $timezone) = explode("+", $time);
+            list($hour, $minute, $second) = explode(":", $time);
+            $highlowTime = $hour . ":" . $minute;
+
+        
+            $highLow += [
+                "time" . $i => $highlowTime,
+                "flag" . $i => $waterlevel->getAttribute('flag'),
+                "level" . $i => $waterlevel->getAttribute('value'),
+            ];
+            $i = $i+1;
+        }
+        $data['highLowTomorrow'] = $highLow;
     }
-
-    //print_r ($highLow);
-
-
-    $data['highLow'] = $highLow;
 }
 
 echo $twig->render('index.html', $data);
