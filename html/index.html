@@ -19,6 +19,8 @@
             #mapid { 
                 height: 180px; 
             }
+            dummydeclaration { padding-left: 4em; } /* Firefox ignores first declaration for some reason */
+            tab1 { padding-left: 2em; }
         </style>
         <!-- Make sure you put this AFTER Leaflet's CSS -->
         <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
@@ -35,7 +37,7 @@
 	 -->
 	<body>
         <div class="container">
-            <br><br>
+            <br><br><br><br><br>
             <div class="header">
                 <h4>Available harbors</h4>
             </div>
@@ -66,19 +68,95 @@
                 </form>
             </div>
             {% if harbor %}
-            <div class="harbor">
-                <h2> {{ harbor }} <small>Latitude: {{ lat }}, Lonitude: {{ lon }}</small></h2><br>
-            
-            {% if currentLevel is defined %}
-                    Current cm from median sea level: {{ currentLevel }} measured at {{ measureTime }} and {% if tide == "sinking" %} sinking {% else %} rising {% endif %}
-                </div>  <br><br>
+            <div class="row">
+                <div class="col-sm-5"> 
+                    <div class="harbor">
+                        <h2> {{ harbor }} <small>Latitude: {{ lat }}, Lonitude: {{ lon }}</small></h2>
+                        {% if currentLevel is defined %}
+                            Current cm from median sea level: {{ currentLevel }} measured at {{ measureTime }} and {% if tide == "sinking" %} sinking {% else %} rising 
+                            <br><br><br><canvas id="smallCanv" width="400" height="20">Your browser does not support the canvas element.</canvas>
+                            <script>
+                                var canvas = document.getElementById("smallCanv");
+                                var ctx = canvas.getContext("2d");
+
+                                ctx.fillStyle = "#73B5E5";
+                                ctx.fillRect(0,0,15,15);
+
+                                ctx.fillStyle = "#000000";
+                                ctx.font = "11px Arial";
+                                ctx.fillText("Current level in cm", 17, 12);
+
+                                ctx.fillStyle = "#ffcc99";
+                                ctx.fillRect(120,0,15,15);
+
+                                /* Current Water Level */
+                                var cl = '{{ currentLevel }}';
+                                var temp = 0;
+                                cl = 150 - cl;
+
+                                /* next tide */
+                                var nt = '{{ nextTideValue }}';
+                                nt = 150 - nt; 
+
+                                ctx.fillStyle = "#000000";
+                                ctx.font = "11px Arial";
+
+                                if (nt < cl) {
+                                    ctx.fillText("Predicted next high tide level in cm", 137, 12);
+                                } else {
+                                    ctx.fillText("Predicted next low tide level in cm", 137, 12);
+                                }
+
+
+                            </script>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <h2><small>Highs and lows today</small></h2>
+                    <p class="text-muted">
+                        {% for i in range(1, 4) %}
+                            {% for key,value in highLow %}
+                                {% if key == "flag" ~ i %}
+                                    {{ value }} at 
+                                {% endif %}
+                                {% if key == "time" ~ i %}
+                                    {{ value }}: <tab1></tab1>
+                                {% endif %}
+                                {% if key == "level" ~ i %}
+                                    {{ value }}cm
+                                    <br>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="col-sm-4">
+                    <h2><small>Highs and lows tomorrow</small></h2>
+                    <p class="text-muted">
+                        {% for i in range(1, 4) %}
+                            {% for key,value in highLowTomorrow %}
+                                {% if key == "flag" ~ i %}
+                                    {{ value }} at 
+                                {% endif %}
+                                {% if key == "time" ~ i %}
+                                    {{ value }}: <tab1></tab1>
+                                {% endif %}
+                                {% if key == "level" ~ i %}
+                                    {{ value }}cm
+                                    <br>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </p>
+                </div>
+            </div>
                 <div class="row">
                     <div class="col-sm-5"><canvas id="myCanvas" width="475" height="320">Your browser does not support the canvas element.</canvas>
                         <script>
                             var canvas = document.getElementById("myCanvas");
                             var ctx = canvas.getContext("2d");
                             /* Current Water Level */
-
                             var cl = '{{ currentLevel }}';
                             var temp = 0;
                             cl = 150 - cl;
@@ -89,26 +167,16 @@
 
                             if (nt < cl) {
                                 ctx.fillStyle = "#ffcc99";
-                                ctx.fillRect(25,nt,475,1000);
-                                ctx.fillStyle = "#000000";
-                                ctx.font = "11px Arial";
-                                ctx.fillText("Next high", 100, nt-2);    
+                                ctx.fillRect(25,nt,475,1000);    
                                 
                                 ctx.fillStyle = "#73B5E5";
                                 ctx.fillRect(25,cl,475,1000);
-                                ctx.fillStyle = "#000000";
-                                ctx.fillText("Current level", 30, cl-2);
                             } else {
                                 ctx.fillStyle = "#73B5E5";
                                 ctx.fillRect(25,cl,475,1000);
-                                ctx.fillStyle = "#000000";
-                                ctx.font = "11px Arial";
-                                ctx.fillText("Current level", 30, cl-2);
 
                                 ctx.fillStyle = "#ffcc99";
                                 ctx.fillRect(25,nt,475,1000);
-                                ctx.fillStyle = "#000000";
-                                ctx.fillText("Next low", 100, nt-2);
                             }
 
                             ctx.fillStyle = "#000000";
@@ -138,7 +206,7 @@
                             ctx.stroke();
                             /* TEXT */
                             ctx.font = "11px Arial";
-                            ctx.fillText("Median sea level", 375, 148);
+                            ctx.fillText("Median sea level", 385, 148);
                             ctx.fillText("150", 2, 10);
                             ctx.fillText("100", 2, 53);
                             ctx.fillText("50", 2, 103);
@@ -164,41 +232,6 @@
                         </script>
                     </div>
                 </div>
-                <br>
-                    <h2><small>Highs and lows for today at {{ harbor }}</small></h2>
-                    <p class="text-muted">
-                        {% for i in range(1, 4) %}
-                            {% for key,value in highLow %}
-                                {% if key == "time" ~ i %}
-                                    {{ value }}:
-                                {% endif %}
-                                {% if key == "flag" ~ i %}
-                                    {{ value }}
-                                {% endif %}
-                                {% if key == "level" ~ i %}
-                                    {{ value }}cm
-                                    <br>
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
-                    </p>
-                    <h2><small>Highs and lows tomorrow</small></h2>
-                    <p class="text-muted">
-                        {% for i in range(1, 4) %}
-                            {% for key,value in highLowTomorrow %}
-                                {% if key == "time" ~ i %}
-                                    {{ value }}:
-                                {% endif %}
-                                {% if key == "flag" ~ i %}
-                                    {{ value }}
-                                {% endif %}
-                                {% if key == "level" ~ i %}
-                                    {{ value }}cm
-                                    <br>
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
-                    </p>
                 {% else %}
                 Weatherstation is offline
                 {% endif %}

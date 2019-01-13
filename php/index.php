@@ -140,7 +140,7 @@ if(isset($_POST['harbor'])) {
         $data['currentLevel'] = end($levels);
 
         $data['prevLevel'] = $levels[count($levels)-2];
-        if ($data['prevLevel'] > $data['currentLevel']) {
+        if ($data['prevLevel'] >= $data['currentLevel']) {
             $data['tide'] = "sinking";
         } else {
             $data['tide'] = "rising";
@@ -169,8 +169,8 @@ if(isset($_POST['harbor'])) {
         
             $highLow += [
                 "hour" . $i => $highlowHour,
-                "time" . $i => $highlowTime,
                 "flag" . $i => $waterlevel->getAttribute('flag'),
+                "time" . $i => $highlowTime,
                 "level" . $i => $waterlevel->getAttribute('value'),
             ];
             $i = $i+1;
@@ -207,8 +207,8 @@ if(isset($_POST['harbor'])) {
 
         
             $highLow += [
-                "time" . $i => $highlowTime,
                 "flag" . $i => $waterlevel->getAttribute('flag'),
+                "time" . $i => $highlowTime,
                 "level" . $i => $waterlevel->getAttribute('value'),
             ];
             $i = $i+1;
