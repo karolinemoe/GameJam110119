@@ -74,7 +74,8 @@
                         <h2> {{ harbor }} <small>Latitude: {{ lat }}, Lonitude: {{ lon }}</small></h2>
                         {% if currentLevel is defined %}
                             Current cm from median sea level: {{ currentLevel }} measured at {{ measureTime }} and {% if tide == "sinking" %} sinking {% else %} rising 
-                            <br><br><br><canvas id="smallCanv" width="400" height="20">Your browser does not support the canvas element.</canvas>
+                        {% endif %}
+                        <br><br><br><canvas id="smallCanv" width="400" height="20">Your browser does not support the canvas element.</canvas>
                             <script>
                                 var canvas = document.getElementById("smallCanv");
                                 var ctx = canvas.getContext("2d");
@@ -109,7 +110,6 @@
 
 
                             </script>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="col-sm-3">
@@ -182,6 +182,7 @@
                             ctx.fillStyle = "#000000";
 
                             /* Water level lines */
+                            ctx.lineWidth = 0.5;
                             ctx.moveTo(25, 1);
                             ctx.lineTo(475, 1);
 
@@ -206,7 +207,6 @@
                             ctx.stroke();
                             /* TEXT */
                             ctx.font = "11px Arial";
-                            ctx.fillText("Median sea level", 385, 148);
                             ctx.fillText("150", 2, 10);
                             ctx.fillText("100", 2, 53);
                             ctx.fillText("50", 2, 103);
@@ -232,11 +232,21 @@
                         </script>
                     </div>
                 </div>
+                <canvas id="sm" width="500" height="20">Your browser does not support the canvas element.</canvas>
+                <script>
+                    var canvas = document.getElementById("sm");
+                    var ctx = canvas.getContext("2d");
+
+                    ctx.font = "11px Arial";
+                    ctx.fillText("0  =  Average height of sea-surface on one place over a period of 19 years(1996-2014)", 0, 17);
+                </script>
                 {% else %}
                 Weatherstation is offline
                 {% endif %}
             {% else %}
-            <br><br><br><br><br><br><br>
+            <br><br>
+            Choose a harbor to get Ebb and Tide information
+            <br><br>
             <div id="mapid" style="width: 600px; height: 400px;"></div>
             <script>
                 var mymap = L.map('mapid').setView([63.4305, 10.3951], 4);
@@ -250,6 +260,8 @@
                 }).addTo(mymap);
             </script>
             {% endif %}
+            <br><br><br><br><br><br><br><br><br><br>
+            <center>API: <a href="https://www.kartverket.no/sehavniva/sehavniva-lokasjonside/">https://www.kartverket.no/sehavniva/sehavniva-lokasjonside/</a></center>
         </div>
 	</body>
 </html>
